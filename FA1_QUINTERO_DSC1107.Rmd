@@ -1,8 +1,10 @@
 ---
 title: "FA1"
 author: "QUINTERO, JOHN CARLOS P."
-date: "2025-02-02"
-output: html_document
+date: '2025-02-02'
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ## DATASET (BUILT IN DATASET)
@@ -114,17 +116,13 @@ The median price increases as the quality of the cut improves, from Fair to Idea
 
 ## Correlation matrices
 ```{r}
-# Install and load ggplot2
 library(ggplot2)
 
-# Calculate correlation matrix
 corrmat <- cor(diamonds[, sapply(diamonds, is.numeric)], use = "complete.obs")
 
-# Convert correlation matrix to long format
 library(reshape2)
 corrmat_melted <- melt(corrmat)
 
-# Visualize with ggplot2
 ggplot(corrmat_melted, aes(Var1, Var2, fill = value)) +
   geom_tile() +
   geom_text(aes(label = round(value, 2)), color = "white", size = 3) +
@@ -169,62 +167,415 @@ geom_line() +
 geom_point()
 ```
 
+We can use multiple geoms in the same plot to show data in different ways.Aesthetic mappings  can be set globally in the ggplot() function, making your code cleaner.
+
+## Multiple aesthetics in the same geom
+```{r}
+ggplot(data = diamonds) +
+geom_point(mapping = aes(x = carat, y = price))
+
+ggplot(data = diamonds) +
+geom_point(mapping = aes(x = carat, y = price, color = cut))
+```
+
+In the second plot, adding the color = cut aesthetic enriches the scatterplot, allowing us to see how the cut of the diamond impacts the relationship between carat and price.This demonstrates the power of ggplot2 to include multiple aesthetics, making plots more informative and visually appealing.
+
+## Faceting 
+```{r}
+ggplot(data = diamonds) +
+geom_point(mapping = aes(x = carat, y = price)) +
+facet_wrap(~cut)
+
+ggplot(data = diamonds) +
+geom_point(mapping = aes(x = carat, y = price)) +
+facet_grid(. ~ cut)
+
+ggplot(data = diamonds) +
+geom_point(mapping = aes(x = carat, y = price)) +
+facet_grid(clarity ~ cut)
+```
+
+These faceting techniques help us visually explore how different categories (like cut and clarity) influence the relationship between the size and price of diamonds.
+
+## Relating the Carat and the Point
+```{r}
+ggplot(data = diamonds) +
+geom_point(mapping = aes(x = carat, y = price, color = cut))
+```
+
+The box plot of carat by cut shows the distribution of carat sizes across cuts, which helps clarify the reason for the paradox. While carat size generally drives price, the cut quality of a diamond can override the expected relationship, leading to higher prices for smaller diamonds with better cuts (like Ideal) and lower prices for larger diamonds with poorer cuts (like Fair).
+
+This relationship explains the apparent paradoxical trend seen in a plot of price vs. carat by highlighting the important role that cut plays in determining diamond prices.
+
+# Lecture 3
+
+## filter()
+```{r}
+# subset to diamonds with price at least $10,000
+filter(diamonds, price >= 10000)
+
+# subset to diamonds with price at least $10,000 AND clarity VVS1 or IF
+filter(diamonds, price >= 10000 & clarity %in% c("VVS1", "IF"))
+
+```
+
+A filter operation helps us to observe the data based on certain logical condition. And boolean operators tells us to where the categorical values belongs.
+
+## select()
+```{r}
+select(diamonds, carat, cut, color, clarity)
+```
+
+A select function helps us to choose what we want in the dataset based on their names. In this result, I chose the 5 columns wherein it would be helpful in analyzing our data
+
+## arrange()
+```{r}
+arrange(diamonds, carat)
+arrange(diamonds, desc(carat))
+```
+
+The arrange operation function helps us to sorts the rows of data. In the result we can see that we arrange the diamonds by carat in ascending and descanding manner.
+
+## Deriving information
+
+## Mutate
+```{r}
+mutate(diamonds, price_per_carat = price/carat)
+
+mutate(diamonds, fancy_diamond = price/carat > 10000)
+
+mutate(diamonds,
+  good_value =
+    if_else(
+      condition = carat > 2, # check whether carat > 2
+      true = price < 5000, # if so, good value if cheaper than $5k
+      false = price < 1000 # if not, good value if cheaper than $1k
+    )
+)
+
+mutate(diamonds,
+value =
+  case_when(
+    carat > 2 & price < 5000 ~ "good", # if carat > 2 and price < 5000, then good
+    carat > 1 & price < 2500 ~ "ok", # if carat > 1 and price < 2500, then ok
+    TRUE ~ "bad" # otherwise, bad
+  )
+)
+```
+
+The mutate function helps us to add another column in an existing column. In this case, we add column while having condition in the dataset. Like, adding a column that indicates wheter the price of the diamond price per carat is at least 10k dollars and the other one if it has a two condition.
+
+## summarise()
+```{r}
+summarise(diamonds, num_fancy_diamonds = sum(price/carat > 10000))
+
+summarise(diamonds,
+  num_fancy_diamonds = sum(price/carat > 10000),
+  mean_diamond_price = mean(price))
+
+diamonds %>%
+  filter(carat >= 1, price < 1000) %>%
+  summarise(any_diamonds = n() > 0)
+```
+
+Summarise is the operation that calculates the summary of the dataset that combines all of the rows in the data.
+In the last result. We use summarise operation in determining if there is any diamonds at least one that cost less than $1000 dollars      
+
+## Multi-step transformations
+
+## The pipe
+```{r}
+diamonds %>% # pipe in the data
+filter(cut == "Premium") %>% # restrict to premium cut diamonds
+mutate(price_per_carat = price/carat) %>% # add price_per_carat variable
+arrange(desc(price_per_carat))
+
+diamonds %>% # pipe in the data
+filter(cut == "Premium") %>% # restrict to premium cut diamonds
+mutate(price_per_carat = price/carat) %>% # add price_per_carat variable
+ggplot() + # start a ggplot
+geom_histogram(aes(x = price_per_carat)) # add a histogram
+
+diamonds %>%
+  filter(carat >= 1) %>%
+  summarise(mean_price = mean(price))
+```
+
+The pipe operation is very useful to us, as it allows us to apply several operations in the data in sequence. The example are the result in the coding. And in the third result, we did compute the mean price of the diamond at least one carat
+
+## Group_by
+```{r}
+diamonds %>% # pipe in the data
+  group_by(cut) %>% # group by cut
+  summarise(max_price = max(price)) # find the max price for each cut
+
+diamonds %>% # pipe in the data
+  group_by(cut, clarity) %>% # group by both cut and clarity
+  summarise(max_price = max(price)) # find the max price for each group
+
+diamonds %>% # pipe in the data
+  group_by(cut, clarity) %>% # group by both cut and clarity
+  summarise(max_price = max(price)) %>% # find the max price for each group
+  ungroup()
+
+library(dplyr)
+
+diamonds %>%
+  group_by(cut) %>%
+  summarise(count = n())
+```
+
+The dplyr to group the diamonds dataset by different categorical variables and compute summary statistics. For instance, the firstgroups the data by cut and calculates the maximum price for each cut category, helping to identify the most expensive diamond for each quality grade. In the second snippet, the data is grouped by both cut and clarity, then the maximum price is calculated for each combination, providing insights into the highest-priced diamonds within each pair of cut and clarity. The final example calculates the count of diamonds in each cut category, showing how many diamonds are available in each cut type. These operations are significant as they allow for quick aggregation and exploration of key trends in the dataset, such as price variations across different cuts and clarities, and the distribution of diamonds within each cut category.
 
 
+## Storing the transformed data
+```{r}
+diamonds
+
+max_prices <- diamonds %>% # pipe in the data
+  group_by(cut) %>% # group by cut
+  summarise(max_price = max(price)) # find the max price for each cut
+max_prices
+```
 
 
+The code demonstrates that applying functions like group_by() and summarise() does not modify the original diamonds dataset. To save the result of a transformation, you need to explicitly assign it to a new variable using the <- operator. In the example, the maximum price for each cut category is calculated and stored in a new variable called max_prices, while the original diamonds dataset remains unchanged. This highlights the need to save transformed data if you want to retain the changes for further use.
+
+## Exercises
+```{r}
+library(dplyr)
+
+min_price_method1 <- diamonds %>%
+  summarise(min_price = min(price))
+
+min_price_method2 <- diamonds %>%
+  arrange(price) %>%
+  slice(1) %>%
+  select(price)
+
+diamonds_1_5_times_width <- diamonds %>%
+  filter(x >= 1.5 * y) %>%
+  summarise(count = n())
+
+median_carat_by_cut <- diamonds %>%
+  filter(color %in% c("D", "E", "F", "G")) %>%
+  group_by(cut) %>%
+  summarise(median_carat = median(carat))
+
+list(
+  min_price_method1 = min_price_method1,
+  min_price_method2 = min_price_method2,
+  diamonds_1_5_times_width = diamonds_1_5_times_width,
+  median_carat_by_cut = median_carat_by_cut
+)
+
+```
 
 
+The exercise shows the minimum diamond price in the dataset, shows on the length of diamonds that reach at least  one a half times their width. And lastly, it also states on what is the median of the carats for diamonds in each cut
+
+##Lecture 4
+
+##Data Import
+```{r}
+heights = read.csv("C:/Users/sbcvj/Downloads/heights.csv")
+
+head(heights)
+```
+
+##Tidy Data
+
+##Generating Tables from the lecture
+
+## Table1
+```{r}
+table1
+```
+
+Table 1 represents a single observation, that defined by the country and year. So the country and year represents the country and year in the data. The cases records the cases within that country and year, and the population provides the total population within that years and countries.
+
+## Table 2
+```{r}
+table2
+```
+
+the country column contains the name of the country for which the data is recorded. The year column represents the year of the data. The data includes information for each country across multiple years. The type  column specifies the type of data recorded.
+
+## Table 3
+```{r}
+table3
+```
+
+Table 3 continues to show a country and a year, but rather than having individual columns for cases and population, these two variables are merged into one column named rate.
+
+The rate column contains values expressed as a fraction, with the numerator indicating cases and the denominator indicating population.
+
+Nevertheless, this table is disorganized, as one column holds two variables, complicating the separation and effective analysis of the data.
+
+## Table 4a
+```{r}
+table4a
+```
+
+In table4, every row reporesents for a country, yet the year variable isn't directly included as a column.
+
+The years are visualized as distinct column headings. The figures in these columns indicate the cases documented in each corresponding year.
+
+This arrangement is regarded as wide format, in which observations are distributed across various columns instead of being structured as separate variables in individual rows. Although this format is helpful for presentation, it lacks neatness as the year variable is used as column headers rather than being in a separate column.
+
+## Table 4b
+```{r}
+table4b
+```
+
+Table 4b illustrates a nation, showcasing population data collected over many years. Every year constitutes an individual column, and population serves as the corresponding values.
+
+This format is not tidy since the year variable should preferably be housed in a single column instead of being distributed among various column names.
+
+## Pivoting
+
+## Longer 
+
+Pivoting Table 4a and Table 4b to a new pair of values:
+```{r}
+table4a %>%
+pivot_longer(cols = c(`1999`, `2000`), names_to = "year", values_to = "cases")
+
+table4b %>%
+pivot_longer(cols = c(`1999`, `2000`), names_to = "year", values_to = "population")
+
+```
+
+the difference between Table4a and Table4b is that in table4a, the figures in the chosen columns indicate the number of instances.While table4b, the figures indicate the population for every year.Thus, the code to implement this is very similar, but we modify values to as each table signifies different variables. This conversion guarantees that every variable occupies a unique column, simplifying the process of analyzing and visualizing trends throughout time.Distinction between the code for Table4a and Table4b. In table4a, the figures in the chosen columns indicate the total number of cases.In table4b, the figures indicate the population for every year.
+
+## Wider
+```{r}
+table2 %>%
+  pivot_wider(names_from = type, values_from = count)
+```
+
+Tidying the simple tibble from the lecture:
+
+```{r}
+tribble(
+  ~pregnant, ~male, ~female,
+  "yes", NA, 10,
+  "no", 20, 12
+) %>%
+  pivot_longer(cols = c(male, female), names_to = "gender", values_to = "count")
+```
+
+pivot_wider function is used to maximize the data from long format to wide format, where unique values from a column (type in this case) become column names, and corresponding values (count) fill these new columns.
+pivot_longer function is used to gather data from wide format to long format, where columns (male, female) are merged into a single column (gender), and their corresponding values are placed into a new column (count).
+
+## Joining
+
+Calling the tidy versions of table4a and table4b:
+```{r}
+tidy4a <- table4a %>%
+pivot_longer(c(`1999`, `2000`), names_to = "year", values_to = "cases")
+tidy4b <- table4b %>%
+pivot_longer(c(`1999`, `2000`), names_to = "year", values_to = "population")
+
+tidy4a
+tidy4b
+```
+
+Since both tables have the same country in the dataset, we can form a join in these tables using left_join() function
+
+```{r}
+left_join(x = tidy4a, y = tidy4b, by = c("country", "year"))
+```
+
+## Exercise
+
+```{r}
+x <- tribble(
+  ~state, ~population,
+  "PA", 12.8,
+  "TX", 28.6,
+  "NY", 19.5
+  )
+y <- tribble(
+  ~state, ~capital,
+  "TX", "Austin",
+  "CA", "Sacramento",
+  "NY", "New York City",
+  "MI", "Lansing"
+  )
+```
+
+We can combine these tibbles using a join operation to create a more complete dataset with both population and capital city information for each state.Allowing us to analyze relationships between population size and capital cities, or any other metrics.
+
+##Separating
+
+From table3, the rate column contains both cases and population variables, and it needs to be splitted into two variables.Using the separate() function, we get:
+```{r}
+table3 %>%
+  separate(rate, into = c("cases", "population"))
+```
+
+Rewriting the code to get a similar result:
+
+```{r}
+table3 %>%
+  separate(rate, into = c("cases", "population"), sep = "/")
+```
+
+From the table, we can see that cases and population are character columns. We might need to convert to better types using convert() = TRUE:
+
+```{r}
+tibble3 <- table3 %>%
+  separate(rate, into = c("cases", "population"), convert =
+             TRUE)
+
+tibble3
+
+data <- tibble3
+
+ggplot(data, aes(x = year, y = cases, group = country, color = country)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  labs(title = "Reported Cases Over Time (1999-2000)",
+       x = "Year",
+       y = "Number of Cases",
+       color = "Country") +
+  theme_minimal()
+```
 
 
+This data set includes analyzed reported cases and population statistics for Afghanistan, Brazil, and China from 1999 and 2000. Population increase was noted in all three nations. China possessed the highest population, succeeded by Brazil and Afghanistan.
 
+In terms of cases per population, Afghanistan showed the highest relative growth (0.0037% to 0.0129%), indicating a significant increase in documented infections. Brazil demonstrated a notable rise (0.022% to 0.046%). Conversely, China's incidence rate stayed almost the same (~0.0167%). These trends illustrate differences in case increase in relation to population size in various areas.
 
+## Missing values
+```{r}
+stocks <- tibble(
+  year = c(2015, 2015, 2015, 2015, 2016, 2016, 2016),
+  qtr = c( 1, 2, 3, 4, 2, 3, 4),
+  return = c(1.88, 0.59, 0.35, NA, 0.92, 0.17, 2.66)
+)
 
+stocks
+```
 
+From the table, we can see that there is a missing value in the fourth row. We might need to clean the data.
 
+Pivoting the data set wider:
 
+```{r}
+stocks %>%
+  pivot_wider(names_from = year, values_from = return)
+```
 
+omitting the missing values:
 
+```{r}
+tribble4 <- stocks %>%
+  na.omit()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+tribble4
+```
 
 
 
