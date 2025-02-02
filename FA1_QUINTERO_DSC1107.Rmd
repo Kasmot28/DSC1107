@@ -1,0 +1,300 @@
+---
+title: "FA1"
+author: "QUINTERO, JOHN CARLOS P."
+date: "2025-02-02"
+output: html_document
+---
+
+## DATASET (BUILT IN DATASET)
+
+
+```{r}
+library(tidyverse)
+diamonds
+```
+### The variables are:
+carat,cut,color,clarity,depth,table,price,x,y, and z
+
+### The observation is: 
+10 and in each observation there is a diamond with its attributes
+
+### The example values are
+carat: 0.23, 0.21, 0.23, 0.29, 0.31, etc.
+cut: Ideal, Premium, Good, Very Good, etc.
+color: E, H, I, J, etc.
+clarity: SI2, SI1, VS1, VVS2, etc.
+depth: 61.5, 59.8, 56.9, 62.4, 63.3, etc.
+table: 55, 61, 65, 58, 58, etc.
+price: 326, 326, 327, 334, 335, etc.
+x: 3.95, 3.89, 4.05, 4.2, 4.34, etc.
+y: 3.98, 3.84, 4.07, 4.23, 4.35, etc.
+z: 2.43, 2.31, 2.31, 2.63, 2.75, etc.
+
+### The continuous variable are:
+carat, depth, table, price, x, y, and z
+
+### The categorical variables are:
+cut, color, and clarity
+
+## Discrete Variables
+```{r}
+ggplot(data = diamonds) +
+geom_bar(mapping = aes(x = cut))
+```
+
+The most common kind of diamond cut is the Ideal cut
+
+## Continuous Variables
+```{r}
+ggplot(data = diamonds) +
+geom_histogram(mapping = aes(x = carat))
+
+ggplot(data = diamonds) +
+geom_histogram(mapping = aes(x = carat)) +
+coord_cartesian(xlim = c(0,3))
+
+ggplot(data = diamonds) +
+geom_histogram(mapping = aes(x = carat), binwidth = 0.01) +
+coord_cartesian(xlim = c(0,3))
+```
+
+Having adjusted the bins of the histogram, we can clearly say that the kind of carat values the most are in the smaller carat range from 0 to 1; onwards, the count rapidly decreased.
+
+# Covariation
+
+## Discrete versus discrete
+```{r}
+ggplot(data = diamonds) +
+geom_count(mapping = aes(x = cut, y = clarity))
+```
+
+The relationship between cut and clarity will depend on how the distribution of clarity varies across different levels of cut. So, the higher quality cuts are more likely have higher clarity.
+
+# Continuous Versus Continuous
+
+## Many to One
+```{r}
+ggplot(data = diamonds) +
+geom_point(mapping = aes(x = x, y = y))
+
+ggplot(data = diamonds) +
+geom_point(mapping = aes(x = x, y = y)) +
+coord_cartesian(xlim = c(3.5, 10), ylim = c(3.5,10))
+
+ggplot(data = diamonds) +
+geom_point(mapping = aes(x = x, y = y)) +
+geom_abline(slope = 1, intercept = 0, color = "red") +
+coord_cartesian(xlim = c(3.5, 10), ylim = c(3.5,10))
+```
+
+Since x and y values indicate the length and breadth of the diamonds, which are usually near in size, particularly for well-proportioned diamonds like round cuts, they are frequently identical for many diamonds.
+Since these are parameters for the plot's visual components rather than data variables, the fixed values slope = 1, intercept = 0, and color = "red" should be given outside of aes().
+
+## One to One
+```{r}
+avg_price_by_carat <- diamonds %>%
+mutate(carat = round(carat, 1)) %>%
+group_by(carat) %>%
+summarise(avg_price = mean(price))
+avg_price_by_carat
+
+ggplot(data = avg_price_by_carat) +
+geom_line(mapping = aes(x = carat, y = avg_price))
+```
+
+The relationship of the average price and carat does make sense, since as the carat of the diamonds larger the price would be more pricey. However, other variables can change the value of the diamonds, so the relationship is not perfectly linear. 
+
+## Continuous versus discrete
+```{r}
+ggplot(data = diamonds) +
+geom_boxplot(mapping = aes(x = cut, y = price))
+```
+
+The median price increases as the quality of the cut improves, from Fair to Ideal.This is consistent with what we would expect, as better cuts generally lead to higher prices due to enhanced appearance and desirability.
+
+## Correlation matrices
+```{r}
+# Install and load ggplot2
+library(ggplot2)
+
+# Calculate correlation matrix
+corrmat <- cor(diamonds[, sapply(diamonds, is.numeric)], use = "complete.obs")
+
+# Convert correlation matrix to long format
+library(reshape2)
+corrmat_melted <- melt(corrmat)
+
+# Visualize with ggplot2
+ggplot(corrmat_melted, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  geom_text(aes(label = round(value, 2)), color = "white", size = 3) +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+  theme_minimal() +
+  labs(title = "Correlation Matrix Heatmap", x = "", y = "")
+```
+
+## Additional Visualization Tools
+
+## Axis Transformations
+```{r}
+ggplot(data = diamonds) +
+geom_histogram(aes(x = carat), binwidth = 0.01)
+```
+
+We can put the x-axis on a logarithmic scale using scale_x_log10():
+
+```{r}
+ggplot(data = diamonds) +
+geom_histogram(aes(x = carat), binwidth = 0.01) +
+scale_x_log10()
+```
+
+The same goes for variables plotted on the y axis. For example:
+
+```{r}
+ggplot(data = diamonds) +
+geom_point(aes(x = carat, y = price)) +
+scale_x_log10() +
+scale_y_log10()
+```
+
+## Multiple Geoms in the Same Plot
+```{r}
+ggplot(data = avg_price_by_carat) +
+geom_line(mapping = aes(x = carat, y = avg_price)) +
+geom_point(mapping = aes(x = carat, y = avg_price))
+
+ggplot(data = avg_price_by_carat, mapping = aes(x = carat, y = avg_price)) +
+geom_line() +
+geom_point()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
