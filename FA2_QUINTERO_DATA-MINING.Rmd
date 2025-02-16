@@ -1,0 +1,172 @@
+---
+title: "FA2-DATA MINING & DATA WRANGLING"
+author: "QUINTERO"
+date: "16 February 2025"
+output: html_document
+---
+
+
+## REQUIRED LIBRARIES 
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+```
+
+## IMPORTING AND CHECKING THE SUMMARY OF THE BUILTIN DATASET 
+
+```{r}
+who <- as_tibble(who)
+population <- as_tibble(population)
+
+#CHECKING THE NUMBER OF ROWS AND COLUMNS OF THE DATASETS
+dim(who)
+dim(population)
+
+colnames(who)
+colnames(population)
+
+summary(population)
+
+population2 <- population %>%
+  mutate(population = as.numeric(population),
+         year = as.integer(year)) 
+
+summary(population2)
+
+```
+
+## TIDY DATA (for who dataset)
+
+```{r}
+who2 <- who %>%
+  pivot_longer(cols = starts_with("new"), 
+               names_to = c("type", "sex", "age_group"), 
+               names_pattern = "new_([a-z]+)_([mf])([0-9]+)", 
+               values_to = "cases")
+
+# Check the result
+head(who2)
+```
+
+## TIDY DATA (for population dataset)
+
+```{r}
+colnames(population)
+population_tidy <- population
+```
+
+## POPULATION DATASET AND JOINING THE TIDY WHO AND TIDY POPULATION DATASET
+
+```{r}
+tuberculosis <- merge(who2, population_tidy)
+head(tuberculosis)
+```
+
+## REMOVING NA VALUES IN THE TUBERCULOSIS DATASET (CLEANING THE DATASET)
+
+```{r}
+tuberculosis_clean <- tuberculosis %>%
+  filter(complete.cases(.))
+tuberculosis_clean <- tuberculosis %>%
+  filter(!is.na(population) & !is.na(cases))
+```
+
+# DATA MANIPULATION
+
+## Determine the total TB cases among men and women in the 21st century in the United States. Identify which sex had more cases. Create a new variable, cases_per_100k, representing TB cases per 100,000 people by year, sex, age group, and TB type.Identify The country and year with the highest cases per 100k. The country and year with the lowest cases per 100k.
+
+```{r}
+us_tb_cases <- tuberculosis_clean %>%
+  filter(country == "United States of America", year >= 2001 & year <= 2020)
+us_tb_cases_sex <- us_tb_cases %>%
+  group_by(sex) %>%
+  summarise(total_cases = sum(cases, na.rm = TRUE))
+us_tb_cases_sex
+
+
+tuberculosis_clean_cases_per_100k <- tuberculosis_clean %>%
+  mutate(cases_per_100k = (cases / population) * 100000)
+head(tuberculosis_clean_cases_per_100k)
+
+```
+
+# DATA VISUALIZATION
+
+## Plot the total cases per 100k as a function of year for China, India, and the United States:
+
+```{r}
+countries_of_interest <- c("China", "India", "United States of America")
+tuberculosis_subset <- tuberculosis_clean_cases_per_100k %>%
+  filter(country %in% countries_of_interest)
+
+ggplot(tuberculosis_subset, aes(x = year, y = cases_per_100k, color = country)) +
+  geom_line() +  
+  scale_y_log10() +  
+  labs(
+    title = "Total TB Cases per 100k as a Function of Year",
+    x = "Year",
+    y = "TB Cases per 100k (log scale)",
+    color = "Country"
+  ) +
+  theme_minimal() 
+```
+
+
+### As we can see in the graph, india has the most total cases in TB along the years among the other countries selected, followed by china, and the last united states. Since as we know, India is the populated country in the world so considering their population and environment is a must in tracking the total cases of TB.
+
+
+
+## Compare distributions of total cases per 100k (summed over years, sexes, and TB types) across age groups:
+
+```{r}
+tuberculosis_age_group_summary <- tuberculosis_clean_cases_per_100k %>%
+  group_by(age_group) %>%
+  summarise(total_cases_per_100k = sum(cases_per_100k, na.rm = TRUE))
+
+ggplot(tuberculosis_age_group_summary, aes(x = age_group, y = total_cases_per_100k)) +
+  geom_bar(stat = "identity") +  
+  scale_y_log10() +  
+  labs(
+    title = "Total TB Cases per 100k across Age Groups",
+    x = "Age Group",
+    y = "Total TB Cases per 100k (log scale)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### The distribution of the total cases per 100k in summed years regarding to their age groups. As we can see, the graph are almost leveled to each age groups. But the most cases age group we have came from ages 25-34, and the least age group we have came from 0-14.Highlighting the cases of our age group is a must. So that the government and healthcare systems know what age group are rampant when it comes to TB.
+
+##  Create a plot to evaluate whether the number of cases per 100k in 2000 was related to a country's population:
+
+```{r}
+tuberculosis_2000 <- tuberculosis_clean_cases_per_100k %>%
+  filter(year == 2000)
+
+ggplot(tuberculosis_2000, aes(x = population, y = cases_per_100k)) +
+  geom_point(aes(color = country), alpha = 0.6) + 
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +  
+  scale_x_continuous(labels = scales::comma) +  
+  scale_y_log10() + 
+  labs(
+    title = "TB Cases per 100k vs. Population in 2000",
+    x = "Population",
+    y = "TB Cases per 100k (log scale)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+
+### The population is indeed needed to evaluate especially in cases per 100k during that year. As it sets as a borderline for the people to know if TB during that time is rampant. Especially in that year TB is one of the deadliest diseases we have in the world.
+
+
+
+
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
