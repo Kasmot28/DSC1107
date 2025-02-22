@@ -1,0 +1,185 @@
+---
+title: "FA3_DATA-MINING"
+author: "QUINTERO"
+date: "2025-02-22"
+output: html_document
+---
+
+
+## IMPORTING THE NECESSARY LIBRARIES
+
+```{r}
+library(tidyverse) 
+library(ggrepel)
+library(kableExtra)
+library(cowplot)
+
+
+```
+
+## TIDY
+
+```{r}
+# Load the RData file
+load("C:/Users/sbcvj/Downloads/ml_pay.RData")
+
+# Check the first few rows of the data
+head(ml_pay)
+
+
+
+
+mlb_raw <- ml_pay %>% as_tibble()
+print(mlb_raw)
+
+dim(mlb_raw)
+colnames(mlb_raw)
+
+mlb_yearly <- mlb_raw %>%
+  pivot_longer(cols = starts_with("p") | starts_with("X"), 
+               names_to = "column_name", 
+               values_to = "value") %>%
+  separate(column_name, into = c("prefix", "year_suffix"), sep = "(?<=\\D)(?=\\d)") %>%
+  mutate(
+    year = str_extract(year_suffix, "\\d{4}"),
+    suffix = str_extract(year_suffix, "\\D+$"),
+    tidy_col_name = case_when(
+      prefix == "p" ~ "payroll",
+      suffix == ".pct" ~ "pct_wins"
+    )
+  ) %>%
+  select(-year_suffix) %>%
+  pivot_wider(names_from = tidy_col_name, values_from = value) %>%
+  select(Team.name.2014, year, payroll, pct_wins)
+print(mlb_yearly)
+
+mlb_aggregate <- mlb_yearly %>%
+  group_by(Team.name.2014) %>%
+  summarize(
+    payroll_aggregate = sum(payroll, na.rm = TRUE),
+    pct_wins_aggregate = mean(pct_wins, na.rm = TRUE)
+  )
+print(mlb_aggregate)
+
+```
+### By cleaning the dataset, the mlb_yearly contains of 1560 rows and 4 columns, while mlb_aggregate contains of 30 rows and 3 columns.
+
+
+
+## QUALITY CONTROL
+
+```{r}
+mlb_aggregate_computed <- mlb_yearly %>%
+  group_by(Team.name.2014) %>%
+  summarize(
+    payroll_aggregate_computed = sum(payroll, na.rm = TRUE),
+    pct_wins_aggregate_computed = mean(pct_wins, na.rm = TRUE)
+  )
+
+mlb_aggregate_joined <- merge(mlb_aggregate, mlb_aggregate_computed, by = "Team.name.2014")
+print(mlb_aggregate_joined)
+
+# Scatter plot for payroll comparison
+ggplot(mlb_aggregate_joined, aes(x = payroll_aggregate_computed, y = payroll_aggregate)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(title = "Payroll: Computed vs Provided", x = "Computed Payroll", y = "Provided Payroll")
+
+# Scatter plot for win percentage comparison
+ggplot(mlb_aggregate_joined, aes(x = pct_wins_aggregate_computed, y = pct_wins_aggregate)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(title = "Win Percentage: Computed vs Provided", x = "Computed Win Percentage", y = "Provided Win Percentage")
+```
+
+
+## EXPLORE
+
+### Plot of payroll accross years
+
+```{r}
+# Plot payroll accross years
+# Plot payroll across years for each team with a red dashed line for the mean payroll
+ggplot(mlb_yearly, aes(x = year, y = payroll)) +
+  geom_line(aes(group = Team.name.2014), color = "blue") +
+  geom_hline(data = mlb_yearly %>%
+               group_by(Team.name.2014) %>%
+               summarize(mean_payroll = mean(payroll, na.rm = TRUE)),
+             aes(yintercept = mean_payroll), linetype = "dashed", color = "red") +
+  facet_wrap(~ Team.name.2014) +
+  theme_minimal() +
+  labs(title = "Payroll Across Years for Each Team", x = "Year", y = "Payroll")
+```
+
+
+### the teams with the highest efficiency are the ones that appear on the scatter plot as teams that outperform others in win percentage relative to payroll, which are the most efficient teams identified through the efficiency calculation.
+
+### Win Percentage Accross Years
+
+```{r}
+# Plot pct_wins across years for each team
+ggplot(mlb_yearly, aes(x = year, y = pct_wins)) +
+  geom_line(aes(group = Team.name.2014), color = "blue") +
+  geom_hline(data = mlb_yearly %>%
+               group_by(Team.name.2014) %>%
+               summarize(mean_pct_wins = mean(pct_wins, na.rm = TRUE)),
+             aes(yintercept = mean_pct_wins), linetype = "dashed", color = "red") +
+  facet_wrap(~ Team.name.2014) +
+  theme_minimal() +
+  labs(title = "Win Percentage Across Years for Each Team", x = "Year", y = "Win Percentage")
+
+```
+
+```{r}
+# Identifying top 3 teams with highest pct_wins
+top_teams_pct_wins <- mlb_aggregate_computed %>%
+  arrange(desc(pct_wins_aggregate_computed)) %>%
+  head(3)
+print(top_teams_pct_wins)
+
+# Identifying top 3 teams with the most erratic pct_wins
+erratic_teams <- mlb_yearly %>%
+  group_by(Team.name.2014) %>%
+  summarize(pct_wins_sd = sd(pct_wins, na.rm = TRUE)) %>%
+  arrange(desc(pct_wins_sd)) %>%
+  head(3)
+print(erratic_teams)
+
+```
+### In the scatter plot, the top three teams with the highest pct_wins_aggregate_computed will be located higher on the y-axis, indicating they have the highest average win percentage across years. While the plot doesn't directly show pct_wins_sd, teams with greater pct_wins_sd (higher variability) will likely display more scattered or widely spread points across different years in a time-series plot of win percentages. These teams will exhibit greater fluctuations in their performance over time, with less consistency in their win percentages. In essence, the teams with the highest pct_wins_aggregate_computed are at the top of the y-axis in the scatter plot, and the most erratic teams, characterized by high pct_wins_sd, would show more spread over years in a time-series view of their performance.
+
+
+## Win Percentage vs Payroll
+
+```{r}
+# Scatter plot for pct_wins vs payroll
+ggplot(mlb_aggregate_joined, aes(x = payroll_aggregate_computed, y = pct_wins_aggregate_computed)) +
+  geom_point(aes(color = Team.name.2014)) +
+  geom_text_repel(aes(label = Team.name.2014), size = 3) +
+  geom_smooth(method = "lm", color = "red") +  # Add least squares line
+  theme_minimal() +
+  labs(title = "Win Percentage vs Payroll", x = "Payroll", y = "Win Percentage")
+```
+
+### The relationship between payroll and win percentage is typically positive, as higher payrolls often allow teams to afford better players and resources. However, this isn't always true, as smaller-budget teams like the Oakland A’s have demonstrated success through strategy and efficient player use, challenging the expectation of a strong positive correlation
+
+## Team Efficiency
+
+```{r}
+# Calculate efficiency as pct_wins_aggregate_computed / payroll_aggregate_computed
+mlb_aggregate_joined <- mlb_aggregate_joined %>%
+  mutate(efficiency = pct_wins_aggregate_computed / payroll_aggregate_computed)
+
+# Identify the top 3 most efficient teams
+top_teams_efficiency <- mlb_aggregate_joined %>%
+  arrange(desc(efficiency)) %>%
+  head(3)
+
+# Print the top 3 teams with their efficiency
+print(top_teams_efficiency)
+```
+### In the previous plot, the three most efficient teams appear as those that achieve a high win percentage (pct_wins_aggregate_computed) relative to their payroll. These teams are located higher on the y-axis (indicating better performance) while maintaining a relatively low position on the x-axis (indicating lower payroll). This suggests they are able to win more games with less financial investment, demonstrating efficiency in how they allocate resources.
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
