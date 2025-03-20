@@ -1,0 +1,289 @@
+---
+title: "SA1_QUINTERO_EDA"
+author: "QUINTERO"
+date: "2025-03-18"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+getwd()
+```
+
+# Assessment Tasks
+
+## Unit 1: Univariate Data Analysis
+
+
+#### Load the dataset and summarize its structure.
+```{r}
+data <- read.csv("C:/Users/sbcvj/Downloads/EDA_Ecommerce_Assessment.csv")
+data
+```
+
+
+#### Create histograms and boxplots to visualize the distribution of Purchase_Amount, Number_of_Items, and Satisfaction_Score
+
+
+```{r}
+library(ggplot2)
+
+# histogram for purchase_amount
+ggplot(data, aes(x = Purchase_Amount)) + 
+  geom_histogram(binwidth = 10, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Purchase Amount", x = "Purchase Amount", y = "Frequency")
+
+# histogram for Number_of_Items
+ggplot(data, aes(x = Number_of_Items)) +
+  geom_histogram(binwidth = 1, fill = "green", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Number of Items", x = "Number of Items", y = "Frequency")
+
+# histogram for Satisfaction_Score
+ggplot(data, aes(x = Satisfaction_Score)) +
+  geom_histogram(binwidth = 1, fill = "red", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Satisfaction Score", x = "Satisfaction_Score", y = "Frequency")
+
+```
+
+
+##### The histogram tells us about the distribution of purchase amount, number of items, and satisfaction score. The frequency represents the number of data points (observation) fall within each bin and the purchase amount, number of items, and satisfaction score which is in x-axis represents itselves.
+
+
+#### Boxplot 
+
+
+```{r}
+ggplot(data, aes(y = Purchase_Amount)) + 
+  geom_boxplot(fill = "skyblue") + 
+  ggtitle("Boxplot of Purchase Amount") + 
+  theme_minimal()
+
+ggplot(data, aes(y = Number_of_Items)) + 
+  geom_boxplot(fill = "blue") + 
+  ggtitle("Boxplot of Number of Items") + 
+  theme_minimal()
+
+ggplot(data, aes(y = Satisfaction_Score)) + 
+  geom_boxplot(fill = "lightcoral") + 
+  ggtitle("Boxplot of Satisfaction_Score") + 
+  theme_minimal()
+
+```
+
+
+##### The boxplot gives us a visualization of the distribution of the said columns. This is the visualization to get their key statistics like minimum, first quartile, median, third quartile, and maximum which can be visualized in the boxplot. Since the box represents the IQR, the line represents the median, the whiskers represents the maximum and minimum.
+
+
+#### Compute measures of central tendency (mean, median, mode) and spread (variance, standard deviation, IQR) for Purchase_Amount.
+
+
+```{r}
+#summary
+summary(data$Purchase_Amount)
+```
+
+```{r}
+#variance
+var(data$Purchase_Amount)
+```
+
+```{r}
+#standard deviation
+sd(data$Purchase_Amount)
+```
+
+```{r}
+#IQR
+IQR(data$Purchase_Amount)
+```
+
+
+#### Compare the distribution of Browsing_Time and Purchase_Amount across different Gender groups using density plots.
+
+
+```{r}
+# Plot for Browsing_Time vs Gender
+ggplot(data, aes(x = Browsing_Time, fill = Gender)) +
+  geom_density(alpha = 0.5) +  # Use alpha for transparency
+  labs(title = "Density Plot of Browsing Time by Gender",
+       x = "Browsing Time", y = "Density") +
+  theme_minimal()
+```
+
+##### The x-axis represents the browsing time, and the y axis represents the density of different browsing times. The red represents the female and the blue represents the male. In the plot, both genders almost have the same browsing time. We can see that in males, the highest density occurs in 20-40 mins while in the female it is slightly higher since the density is within 40-60 mins. 
+
+
+```{r}
+# Plot for Purchase_Amount vs Gender
+ggplot(data, aes(x = Purchase_Amount, fill = Gender)) +
+  geom_density(alpha = 0.5) +  # Use alpha for transparency
+  labs(title = "Density Plot of Purchase Amount by Gender",
+       x = "Purchase Amount", y = "Density") +
+  theme_minimal()
+```
+
+##### Similar to browsing time, the y-axis represents the density, and the x-axis represents the purchase amount. The red represents the females and the blue represents the males. So, as we can see in the plot, although having the same purchase amount, males purchasing behavior reach it highest density within 200-250, while the female reach its highest density in 100-200, though the behavior is reclining, we can see that in females, they almost reach again their peak in 450.
+
+
+#### Apply a logarithmic or square root transformation on Browsing_Time and evaluate changes in skewness.
+
+
+```{r}
+data$log_Browsing_Time <- log(data$Browsing_Time + 1)  # Log transformation
+data$sqrt_Browsing_Time <- sqrt(data$Browsing_Time)    # Square root transformation
+```
+
+
+#### Fit a simple linear regression model predicting Purchase_Amount based on Browsing_Time. Interpret the results.
+
+
+```{r}
+lm_model <- lm(Purchase_Amount ~ Browsing_Time, data = data)
+summary(lm_model)
+```
+
+
+#### Use ggplot2 (or equivalent) to create scatter plots and regression lines.
+
+```{r}
+ggplot(data, aes(x = Browsing_Time, y = Purchase_Amount)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", col = "red") +
+  ggtitle("Linear Regression: Purchase Amount vs Browsing Time")
+```
+
+
+##### The scatter plots shows the relationship between purchase amount and browsing time. The red regression line is almost straight line means that there are weak relationship between the two columns. The points are scattered in y-axis meaning purchasing amounts vary at all browsing times. And for the flat trend, it implies that there is a low correlation coefficient.
+
+
+## Unit 2: Bivariate Data Analysis
+
+
+#### Create scatter plots to explore the relationship between Purchase_Amount and Number_of_Items.
+
+
+```{r}
+ggplot(data, aes(x = Number_of_Items, y = Purchase_Amount)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  labs(title = "Scatter Plot: Purchase Amount vs. Number of Items",
+       x = "Number of Items",
+       y = "Purchase Amount") +
+  theme_minimal()
+```
+
+
+##### The scatter plot shows the relationship of purchase amount and number of items, where the vertical alignment of points indicates that the number of items is a discrete variable. The wide spread of purchase amount at each item suggests that the item prices vary significantly. Meaning that buying more items doesn’t always lead to a higher purchase amount.
+
+
+#### Fit a polynomial regression model for Purchase_Amount and Browsing_Time and compare it with a simple linear model.
+
+```{r}
+lm_model <- lm(Purchase_Amount ~ Browsing_Time, data = data)
+poly_model <- lm(Purchase_Amount ~ poly(Browsing_Time, 2), data = data)
+
+ggplot(data, aes(x = Browsing_Time, y = Purchase_Amount)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +  # Linear model
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), color = "red", se = FALSE) +  # Polynomial model
+  labs(title = "Polynomial vs. Linear Regression",
+       x = "Browsing Time",
+       y = "Purchase Amount") +
+  theme_minimal()
+```
+
+
+##### The scatter plots shows the relationship between polynomial and linear regression. The red line represents the polynomial regression and the blue line represents simple linear regression. As we can see in the distribution of the points, we can say that there is no strong correlation between the two variables as the trend remain nearly flat. Both of the line, are going downward trend, suggesting that the data is not strong predictor of purchase amount.
+
+
+#### Apply LOESS (Locally Estimated Scatterplot Smoothing) to Purchase_Amount vs. Browsing_Time and visualize the results.
+
+
+```{r}
+ggplot(data, aes(x = Browsing_Time, y = Purchase_Amount)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "loess", color = "green", se = FALSE) +
+  labs(title = "LOESS Smoothing: Purchase Amount vs. Browsing Time",
+       x = "Browsing Time",
+       y = "Purchase Amount") +
+  theme_minimal()
+```
+
+
+##### This scatter plot visualizes the relationship between Browsing Time and Purchase Amount, with a LOESS smoothing curve (green line) to capture potential trends. The LOESS (Locally Estimated Scatterplot Smoothing) regression provides a flexible, non-linear fit to the data.
+
+
+#### Compare robust regression methods (Huber or Tukey regression) with ordinary least squares (OLS).
+
+
+```{r}
+library(MASS)
+
+ols_model <- lm(Purchase_Amount ~ Browsing_Time, data = data)
+huber_model <- rlm(Purchase_Amount ~ Browsing_Time, data = data)
+
+# Compare Models
+summary(ols_model)
+summary(huber_model)
+```
+
+
+## UNIT 3: Trivariate/Hypervariate Data Analysis
+
+
+#### Explore interaction effects between Browsing_Time and Category on Purchase_Amount using interaction plots.
+
+```{r}
+ggplot(data, aes(x = Browsing_Time, y = Purchase_Amount, color = Category)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(title = "Interaction: Browsing Time & Category on Purchase Amount",
+       x = "Browsing Time",
+       y = "Purchase Amount") +
+  theme_minimal()
+```
+
+##### We can see in the plot, that some of the categories are having upward trend but remain a straight line, meaning that the effect of the browsing time and purchase amount is not the same for all categories as some of them are goind downward trend. 
+
+
+#### Create coplots of Purchase_Amount against Browsing_Time for different levels of Category.
+
+```{r}
+library(lattice)
+coplot(Purchase_Amount ~ Browsing_Time | Category, data = data,
+       panel = panel.smooth, rows = 1)
+```
+
+
+##### As we can see in the data, there are 5 categories which are beauty, books, clothing, electronics, and Home & Kitchen. In the first case in beauty, we can see the line are slightly goind upward trend with straight line, indicating that there are consistent positive relationship between purchase amount and browsing time. In books, we can see that the line are steep and going downward trend, indicating that more browsing time leads to lower purchase amount. In clothing, we can see the slope is steep but going upward, indicating that small browsing time leads to a large increase in purchase amount. In Electronics, we can see that there are non-linear relationship between the two columns. And lastly in Home & Kitchen, we can see also that the line is steep and goind downward, indicating that more browsing hours leads to lower purchase amount.
+
+
+#### Use level plots or contour plots to visualize relationships between Browsing_Time, Number_of_Items, and Purchase_Amount.
+
+```{r}
+ggplot(data, aes(x = Browsing_Time, y = Number_of_Items, fill = Purchase_Amount)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(title = "Level Plot: Browsing Time vs. Number of Items on Purchase Amount",
+       x = "Browsing Time",
+       y = "Number of Items",
+       fill = "Purchase Amount") +
+  theme_minimal()
+```
+
+
+##### In the plot, the x-axis represents the browsing time while the y-axis represents the number of items. In color, darker colors indicate lower purchases while brighter colors indicate higher purchases. The vertical bars, represents the purchase amounts vary accross different browsing times. Number of Items values indicates that purchase amounts are somewhat scattered, meaning there may not be a strong trend linking these variables. If yellow (high purchase amount) is more concentrated at specific browsing times or item counts, those areas might indicate optimal conditions for higher spending.
+
+
+#### Perform multiple regression with Purchase_Amount as the dependent variable and Browsing_Time, Number_of_Items, and Satisfaction_Score as predictors. Perform model selection and assess variable importance.
+
+
+```{r}
+multi_model <- lm(Purchase_Amount ~ Browsing_Time + Number_of_Items + Satisfaction_Score, data = data)
+summary(multi_model)
+
+
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
